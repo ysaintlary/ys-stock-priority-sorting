@@ -2,7 +2,7 @@
   "schema_version": 1,
   "profile": "managed",
   "files": {
-    ".github/dependabot.yml": "7dec36c631125c115310d56eecfc1dcb19ee6c9f676bef2e25c257e8f8dac2f7",
+    ".github/dependabot.yml": "89b0ac216125cd11a5806de70472a5d4cb470a2143606d62a03993e13e6dd02e",
     ".github/workflows/ci.yml": "d90be51477ab156a54aaa1d53065d61a91596653b91c30d231e8250df0bf7822",
     ".github/workflows/finalize-release.yml": "7d6850f1a01fd8a7e5abbe3165e9e26213b6efbc7ac52fa23e06135f3c777998",
     ".github/workflows/prepare-release.yml": "4dc26704817250c2386a1ddf3c2fb33c77f808515470dd9c29be0c18c58ddcdd",

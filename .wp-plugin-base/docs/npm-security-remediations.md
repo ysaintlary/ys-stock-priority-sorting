@@ -10,10 +10,12 @@ The initial catalog entry is `braces-3.0.3`, addressing
 ## Trust and ownership
 
 The signed foundation owns one implementation in `scripts/security/` and a finite
-catalog of explicitly reviewed remediations. The braces patch and regression test
-are byte-identical to the reviewed app-base backport. The catalog records source
-commit, upstream patch head, tarball URL/integrity, patch and regression SHA256s,
-and complete pristine/patched package file inventories. An additional catalog
+catalog of explicitly reviewed remediations. The catalog records the public
+upstream patch head, tarball URL/integrity, patch and regression SHA256s, and
+complete pristine/patched package file
+inventories. Private repository names and internal commit references are not
+publication provenance and must not be included. Removing such attribution does
+not change any reviewed patch, regression or package digest. An additional catalog
 entry requires its own source review, integrity evidence, attack/compatibility
 regression, exact advisory contract and tests. There is no project-supplied
 advisory ignore list or arbitrary patch execution facility.
@@ -159,9 +161,12 @@ The audit API explicitly includes development, optional and peer dependencies,
 sets the project path, disables workspace/global selection and pins the public
 npm registry. These settings are independent of inherited omit, production,
 workspace and registry defaults. The raw report remains visible. npm report version,
-exit status, counts, severity consistency, every dependency edge in both
-directions, cycles and exact affected-node coverage are checked. Each raw node's
-severity must equal the maximum of its complete source edges. Only the exact
+exit status, counts, every dependency edge in both directions and exact
+affected-node coverage are checked. Each node must reach a real advisory;
+cycles without advisory evidence fail closed. npm can report an aggregate below
+its transitive advisory severity, so classification traverses every reachable
+advisory even through cycles. A reported severity above all reachable evidence
+still fails closed. Only the exact
 byte-verified catalog advisory source is removed from that graph. Ancestors with
 no residual sources qualify fully; mixed ancestors retain the maximum severity
 of every remaining source. Output preserves their original aggregate severity,
