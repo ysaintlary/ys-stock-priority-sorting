@@ -1,0 +1,5 @@
+# Child-owned PHPStan overlay loaded after phpstan.neon.dist.
+
+parameters:
+  excludePaths:
+    - lib
