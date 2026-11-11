@@ -28,12 +28,15 @@ define( 'YS_SPS_PATH', plugin_dir_path( __FILE__ ) );
 
 require_once __DIR__ . '/lib/wp-plugin-base/wp-plugin-base-runtime-updater.php';
 
-add_action( 'before_woocommerce_init', function () {
-	if ( class_exists( '\Automattic\WooCommerce\Utilities\FeaturesUtil' ) ) {
-		\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', __FILE__ );
-		\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'cart_checkout_blocks', __FILE__ );
+add_action(
+	'before_woocommerce_init',
+	function () {
+		if ( class_exists( '\Automattic\WooCommerce\Utilities\FeaturesUtil' ) ) {
+			\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', __FILE__ );
+			\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'cart_checkout_blocks', __FILE__ );
+		}
 	}
-} );
+);
 
 add_action( 'plugins_loaded', 'ys_sps_init' );
 
