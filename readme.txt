@@ -4,7 +4,7 @@ Tags: woocommerce, stock, sorting, product-collection, blocks
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -38,6 +38,12 @@ Si aucun palier n'est défini (vide, 0 ou 1), le produit n'est jamais considér�
     wp stock-sort recalculate --sync   # exécution immédiate
 
 == Changelog ==
+
+= 1.0.2 =
+* Fix - fix: add WORDPRESS_TEST_PLUGINS for Plugin Check WooCommerce dependency.
+* Update - Release 1.0.1.
+* Update - chore: enable readiness/quality/security packs with PUC exclusions.
+
 
 = 1.0.1 =
 * Update - chore: enable readiness/quality/security packs with PUC exclusions.
