@@ -3,7 +3,7 @@
  * Plugin Name:       YS | Stock priority sorting
  * Plugin URI:        https://github.com/ysaintlary/ys-stock-priority-sorting
  * Description:       Trie les produits WooCommerce par priorité de stock : en stock, stock faible, rupture.
- * Version: 1.0.2
+ * Version: 1.0.3
  * Requires at least: 6.5
  * Requires PHP:      8.0
  * Requires Plugins:  woocommerce
