@@ -1,4 +1,4 @@
-<?php
+<?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 /**
  * Commande WP-CLI pour le recalcul des paliers effectifs.
  */
@@ -40,20 +40,23 @@ class YS_SPS_CLI {
 			$offset     = 0;
 
 			do {
-				$product_ids = wc_get_products( array(
-					'limit'  => $batch_size,
-					'offset' => $offset,
-					'return' => 'ids',
-					'status' => array( 'publish', 'draft', 'pending', 'private' ),
-				) );
+				$product_ids = wc_get_products(
+					array(
+						'limit'  => $batch_size,
+						'offset' => $offset,
+						'return' => 'ids',
+						'status' => array( 'publish', 'draft', 'pending', 'private' ),
+					)
+				);
 
 				foreach ( $product_ids as $product_id ) {
 					YS_SPS_Effective_Step::update_product_step( $product_id );
-					$count++;
+					++$count;
 				}
 
-				$offset += $batch_size;
-			} while ( count( $product_ids ) >= $batch_size );
+				$offset         += $batch_size;
+				$product_count   = count( $product_ids );
+			} while ( $product_count >= $batch_size );
 
 			WP_CLI::success( sprintf( '%d produits recalculés.', $count ) );
 			return;

@@ -1,4 +1,4 @@
-<?php
+<?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 /**
  * Calcul et stockage du palier effectif pour chaque produit.
  *
@@ -99,7 +99,7 @@ class YS_SPS_Effective_Step {
 		$depth = 0;
 		$term  = get_term( $term_id, 'product_cat' );
 		while ( $term && ! is_wp_error( $term ) && $term->parent > 0 ) {
-			$depth++;
+			++$depth;
 			$term = get_term( $term->parent, 'product_cat' );
 		}
 		return $depth;
@@ -124,13 +124,13 @@ class YS_SPS_Effective_Step {
 	 * Le premier paramètre est $meta_id (ajout/modification) ou $meta_ids (suppression) ;
 	 * on ne l'utilise pas.
 	 */
-	public static function on_term_meta_change( $meta_id_or_ids, int $term_id, string $meta_key, $meta_value ): void {
-		if ( $meta_key !== 'quantity_manager_category_step' ) {
+	public static function on_term_meta_change( $meta_id_or_ids, int $term_id, string $meta_key, $meta_value ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+		if ( 'quantity_manager_category_step' !== $meta_key ) {
 			return;
 		}
 
 		$term = get_term( $term_id );
-		if ( ! $term || is_wp_error( $term ) || $term->taxonomy !== 'product_cat' ) {
+		if ( ! $term || is_wp_error( $term ) || 'product_cat' !== $term->taxonomy ) {
 			return;
 		}
 
@@ -166,12 +166,14 @@ class YS_SPS_Effective_Step {
 	 * Action Scheduler : lot de recalcul global (tous les produits).
 	 */
 	public static function process_all_batch( int $offset = 0 ): void {
-		$product_ids = wc_get_products( array(
-			'limit'  => self::BATCH_SIZE,
-			'offset' => $offset,
-			'return' => 'ids',
-			'status' => array( 'publish', 'draft', 'pending', 'private' ),
-		) );
+		$product_ids = wc_get_products(
+			array(
+				'limit'  => self::BATCH_SIZE,
+				'offset' => $offset,
+				'return' => 'ids',
+				'status' => array( 'publish', 'draft', 'pending', 'private' ),
+			)
+		);
 
 		foreach ( $product_ids as $product_id ) {
 			self::update_product_step( $product_id );
@@ -191,20 +193,22 @@ class YS_SPS_Effective_Step {
 	 * Action Scheduler : lot de recalcul pour une catégorie et ses sous-catégories.
 	 */
 	public static function process_category_batch( array $term_ids, int $offset = 0 ): void {
-		$product_ids = get_posts( array(
-			'post_type'      => 'product',
-			'posts_per_page' => self::BATCH_SIZE,
-			'offset'         => $offset,
-			'fields'         => 'ids',
-			'post_status'    => array( 'publish', 'draft', 'pending', 'private' ),
-			'tax_query'      => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
-				array(
-					'taxonomy' => 'product_cat',
-					'field'    => 'term_id',
-					'terms'    => array_map( 'absint', $term_ids ),
+		$product_ids = get_posts(
+			array(
+				'post_type'      => 'product',
+				'posts_per_page' => self::BATCH_SIZE,
+				'offset'         => $offset,
+				'fields'         => 'ids',
+				'post_status'    => array( 'publish', 'draft', 'pending', 'private' ),
+				'tax_query'      => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+					array(
+						'taxonomy' => 'product_cat',
+						'field'    => 'term_id',
+						'terms'    => array_map( 'absint', $term_ids ),
+					),
 				),
-			),
-		) );
+			)
+		);
 
 		foreach ( $product_ids as $product_id ) {
 			self::update_product_step( $product_id );

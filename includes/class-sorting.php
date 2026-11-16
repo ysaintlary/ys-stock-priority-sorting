@@ -1,4 +1,4 @@
-<?php
+<?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 /**
  * Tri des produits par priorité de stock via le filtre posts_clauses.
  *
