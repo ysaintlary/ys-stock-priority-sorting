@@ -3,3 +3,8 @@
 parameters:
   excludePaths:
     - lib
+
+  ignoreErrors:
+    -
+      identifier: function.notFound
+      message: '#wc_get_products|as_schedule_single_action#'
