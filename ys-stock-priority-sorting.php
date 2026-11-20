@@ -53,7 +53,7 @@ function ys_sps_init() {
 
 	if ( defined( 'WP_CLI' ) && WP_CLI ) {
 		require_once YS_SPS_PATH . 'includes/class-cli.php';
-		YS_SPS_CLI::register();
+		YS_SPS_CLI::register(); // @phpstan-ignore class.notFound
 	}
 }
 
