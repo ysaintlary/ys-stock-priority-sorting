@@ -54,7 +54,7 @@ class YS_SPS_CLI {
 					++$count;
 				}
 
-				$offset += $batch_size;
+				$offset       += $batch_size;
 				$product_count = count( $product_ids );
 			} while ( $product_count >= $batch_size );
 
