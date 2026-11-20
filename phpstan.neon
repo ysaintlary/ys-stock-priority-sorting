@@ -3,8 +3,9 @@
 parameters:
   excludePaths:
     - lib
+    - includes/class-cli.php
 
   ignoreErrors:
     -
       identifier: function.notFound
-      message: '#wc_get_products|as_schedule_single_action|as_unschedule_all_actions|WP_CLI\\\\Utils\\\\get_flag_value#'
+      message: '#wc_get_products|as_schedule_single_action|as_unschedule_all_actions#'
