@@ -10,7 +10,7 @@
  * Conditions d'application (toutes requises) :
  * - Front uniquement (y compris REST API servant l'affichage front)
  * - Requête sur le type product
- * - ORDER BY contenant menu_order (= tri par défaut)
+ * - ORDER BY non vide (tout tri catalogue)
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -42,7 +42,7 @@ class YS_SPS_Sorting {
 			return $clauses;
 		}
 
-		if ( empty( $clauses['orderby'] ) || false === stripos( $clauses['orderby'], 'menu_order' ) ) {
+		if ( empty( $clauses['orderby'] ) ) {
 			return $clauses;
 		}
 
