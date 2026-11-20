@@ -4,7 +4,7 @@ Tags: woocommerce, stock, sorting, product-collection, blocks
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.0.11
+Stable tag: 1.0.12
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -38,6 +38,32 @@ Si aucun palier n'est défini (vide, 0 ou 1), le produit n'est jamais considér�
     wp stock-sort recalculate --sync   # exécution immédiate
 
 == Changelog ==
+
+= 1.0.12 =
+* Add - Add phpstan-ignore for WP-CLI class reference.
+* Update - Release 1.0.11.
+* Update - Exclude WP-CLI class from PHPStan analysis.
+* Update - Release 1.0.10.
+* Add - Add missing PHPStan ignoreErrors for Action Scheduler and WP-CLI.
+* Update - Release 1.0.9.
+* Fix - Fix PHPCS equals sign alignment in class-cli.php.
+* Update - Release 1.0.8.
+* Fix - Fix PHPCS equals sign alignment warnings in class-cli.php.
+* Update - Release 1.0.7.
+* Update - Remove menu_order restriction from sorting condition.
+* Update - Release 1.0.6.
+* Fix - fix: resolve PHPCS errors (Yoda conditions, file names, function call formatting).
+* Update - Release 1.0.5.
+* Add - chore: update foundation to v1.10.15, add lib exclusion and PHPStan ignores.
+* Update - Release 1.0.4.
+* Fix - fix: align PHP code with WordPress coding standards for finalize-release.
+* Update - Release 1.0.3.
+* Fix - fix: correct CRLF receipt checksums and update Tested up to 7.1.
+* Update - Release 1.0.2.
+* Fix - fix: add WORDPRESS_TEST_PLUGINS for Plugin Check WooCommerce dependency.
+* Update - Release 1.0.1.
+* Update - chore: enable readiness/quality/security packs with PUC exclusions.
+
 
 = 1.0.11 =
 * Update - Exclude WP-CLI class from PHPStan analysis.
