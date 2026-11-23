@@ -7,13 +7,24 @@ versions, rewrite lock identities, hide raw findings, or lower an audit threshol
 The initial catalog entry is `braces-3.0.3`, addressing
 `GHSA-vfj7-8cjw-p6xm`; npm still publishes 3.0.3 as latest at qualification time.
 
+The `picomatch-4.0.7` entry addresses `GHSA-fc5q-39xc-vjpf` using the
+exact `lib/parse.js` change from upstream PR #237 at
+`1bf0d04563cb9ce568cf36efc5f6b7187d9911d5`. It collapses redundant repetition
+in single-branch star extglobs and verifies the upstream security cases and
+consumer matching behavior. The build, Markdown and audit-tool manifests select
+this entry. Picomatch dependencies are unified on 4.0.7 so every affected copy
+can be verified against the same reviewed implementation. Remove the override
+and backport when a compatible patched upstream release is qualified.
+
 ## Trust and ownership
 
 The signed foundation owns one implementation in `scripts/security/` and a finite
-catalog of explicitly reviewed remediations. The braces patch and regression test
-are byte-identical to the reviewed app-base backport. The catalog records source
-commit, upstream patch head, tarball URL/integrity, patch and regression SHA256s,
-and complete pristine/patched package file inventories. An additional catalog
+catalog of explicitly reviewed remediations. The catalog records the public
+upstream patch head, tarball URL/integrity, patch and regression SHA256s, and
+complete pristine/patched package file
+inventories. Private repository names and internal commit references are not
+publication provenance and must not be included. Removing such attribution does
+not change any reviewed patch, regression or package digest. An additional catalog
 entry requires its own source review, integrity evidence, attack/compatibility
 regression, exact advisory contract and tests. There is no project-supplied
 advisory ignore list or arbitrary patch execution facility.
@@ -115,8 +126,9 @@ raw value is retained, not normalized. Registry metadata can also change counts
 and suggested fixes between captures. npm 10.9.9 omitted reciprocal advisory
 edges and remains unsuitable for this proof. Incomplete reports stay rejected.
 
-The unbundled tool lock resolves patched published dependencies and has zero
-self-audit findings at qualification. The direct APIs and every locked dependency
+The unbundled audit tool uses published dependency updates and the verified
+Picomatch backport. Raw self-audit findings for that upstream version remain
+visible and are qualified only after its installed bytes and regression pass. The direct APIs and every locked dependency
 support the retained Node 22.12+ floor. Application installation and builds keep
 their existing package manager; ambient npm only bootstraps the locked audit tool.
 The adapter receives explicit registry, complete inclusion and workspace options,
@@ -124,7 +136,8 @@ so it does not load application or user npm configuration as audit policy.
 
 The security pack installs this tool once into an isolated temporary directory
 using its committed integrity lock, with lifecycle scripts and generated bin links
-disabled. The adapter loads the explicit physical API package paths. Before code
+disabled. Its explicit `npm-remediations.json` applies the reviewed Picomatch fix
+before the producer is used. That manifest is also bound to signed source. The adapter loads the explicit physical API package paths. Before code
 is loaded, the verifier binds the installed manifest/lock/config and the entire
 `node_modules` tree to signed source. The inventory digest hashes the compact JSON
 array of sorted `[forward-slash-relative-path, SHA256-of-file-bytes]` pairs; no
@@ -159,9 +172,12 @@ The audit API explicitly includes development, optional and peer dependencies,
 sets the project path, disables workspace/global selection and pins the public
 npm registry. These settings are independent of inherited omit, production,
 workspace and registry defaults. The raw report remains visible. npm report version,
-exit status, counts, severity consistency, every dependency edge in both
-directions, cycles and exact affected-node coverage are checked. Each raw node's
-severity must equal the maximum of its complete source edges. Only the exact
+exit status, counts, every dependency edge in both directions and exact
+affected-node coverage are checked. Each node must reach a real advisory;
+cycles without advisory evidence fail closed. npm can report an aggregate below
+its transitive advisory severity, so classification traverses every reachable
+advisory even through cycles. A reported severity above all reachable evidence
+still fails closed. Only the exact
 byte-verified catalog advisory source is removed from that graph. Ancestors with
 no residual sources qualify fully; mixed ancestors retain the maximum severity
 of every remaining source. Output preserves their original aggregate severity,

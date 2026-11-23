@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-import { chmodSync, cpSync, mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, cpSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, posix, win32 } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,7 +11,7 @@ import { classifyAudit } from '../security/npm-audit-report.mjs';
 
 const fixture = fileURLToPath(new URL('../../tests/fixtures/npm-remediation/', import.meta.url));
 const cli = fileURLToPath(new URL('../security/npm-remediation.mjs', import.meta.url));
-const temporary = mkdtempSync(join(tmpdir(), 'foundation-npm-remediation-'));
+const temporary = mkdtempSync(join(realpathSync(tmpdir()), 'foundation-npm-remediation-'));
 const baseline = join(temporary, 'baseline');
 const auditTools = join(temporary, 'audit-tools');
 const digest = path => createHash('sha256').update(readFileSync(path)).digest('hex');
@@ -51,6 +51,26 @@ test('real pristine parser is rejected; exact patch passes attack/semantics test
   assert.equal(digest(join(root, 'package.json')), packageHash);
   assert.equal(digest(join(root, 'package-lock.json')), lockHash);
   assert.equal(readJson(join(root, 'node_modules/braces/package.json')).version, '3.0.3');
+});
+
+test('picomatch backport rejects pristine or changed bytes and preserves package identities', () => {
+  const root = mkdtempSync(join(temporary, 'picomatch-'));
+  cpSync(auditTools, root, { recursive: true });
+  const patch = fileURLToPath(new URL('../security/catalog/picomatch-4.0.7.patch', import.meta.url));
+  const reverse = run('git', [`--work-tree=${root}`, 'apply', '--reverse',
+    '--directory=node_modules/picomatch', patch], root);
+  assert.equal(reverse.status, 0, reverse.stderr);
+  assert.throws(() => verifyRemediations(root), /Installed bytes differ/);
+  const packageHash = digest(join(root, 'package.json'));
+  const lockHash = digest(join(root, 'package-lock.json'));
+  const applied = applyRemediations(root);
+  assert.equal(applied[0].id, 'picomatch-4.0.7');
+  assert.deepEqual(applyRemediations(root), applied);
+  assert.equal(digest(join(root, 'package.json')), packageHash);
+  assert.equal(digest(join(root, 'package-lock.json')), lockHash);
+  writeFileSync(join(root, 'node_modules/picomatch/lib/parse.js'), '// unexpected parser');
+  assert.throws(() => verifyRemediations(root), /Installed bytes differ/);
+  assert.throws(() => applyRemediations(root), /Pristine bytes differ/);
 });
 
 test('subprocess isolation removes Git environment keys irrespective of casing', () => {
@@ -186,7 +206,7 @@ test('locked producer bootstrap preserves npm failure inside a shell conditional
 test('audit producer identity rejects missing, spoofed, changed, extra and linked files', () => {
   assert.throws(() => qualifiedAuditProducer(), /explicit locked tooling/);
   const linkedRoot = mkdtempSync(join(temporary, 'linked-producer-root-'));
-  for (const file of ['package.json', 'package-lock.json', '.npmrc']) cpSync(join(auditTools, file), join(linkedRoot, file));
+  for (const file of ['package.json', 'package-lock.json', '.npmrc', 'npm-remediations.json']) cpSync(join(auditTools, file), join(linkedRoot, file));
   symlinkSync(join(auditTools, 'node_modules'), join(linkedRoot, 'node_modules'), 'dir');
   assert.throws(() => qualifiedAuditProducer(linkedRoot), /Linked or escaped audit producer root/);
   for (const file of ['package.json', 'node_modules/@npmcli/arborist/lib/index.js', 'node_modules/extra.js', 'node_modules/linked.js']) {
@@ -229,7 +249,7 @@ for (const [name, change] of [
   ['unknown source', r => { r.data.vulnerabilities.consumer.via = ['absent']; }],
   ['changed advisory', r => { r.data.vulnerabilities.braces.via[0].range = '*'; }],
   ['cycle', r => { r.data.vulnerabilities.braces.via = ['consumer']; r.data.vulnerabilities.consumer.effects = ['braces']; }],
-  ['hidden severity', r => { r.data.vulnerabilities.consumer.severity = 'low'; }],
+  ['severity contradicting counts', r => { r.data.vulnerabilities.consumer.severity = 'low'; }],
 ]) test(`audit rejects ${name}`, () => {
   const input = { data: report(), status: 1 }; change(input);
   assert.throws(() => classifyAudit(JSON.stringify(input.data), input.status, verified));
@@ -274,9 +294,80 @@ test('a second advisory on the remediated package is never removed', () => {
 test('unexplained severity inflation and extra graph edges fail closed', () => {
   const inflated = report();
   inflated.vulnerabilities.consumer.severity = 'critical';
+  inflated.metadata.vulnerabilities.high--; inflated.metadata.vulnerabilities.critical++;
   assert.throws(() => classifyAudit(JSON.stringify(inflated), 1, verified), /Unexplained aggregate/);
   const extra = report(); extra.vulnerabilities.braces.effects.push('absent');
   assert.throws(() => classifyAudit(JSON.stringify(extra), 1, verified), /Incomplete reverse/);
+});
+
+function graphReport(vulnerabilities) {
+  const counts = { info: 0, low: 0, moderate: 0, high: 0, critical: 0, total: Object.keys(vulnerabilities).length };
+  for (const item of Object.values(vulnerabilities)) counts[item.severity]++;
+  return { auditReportVersion: 2, vulnerabilities, metadata: { vulnerabilities: counts } };
+}
+function graphNode(name, severity, via, effects) {
+  return { name, severity, via, effects, nodes: [`node_modules/${name}`] };
+}
+const graphAdvisory = (name, severity) => ({ name, severity, url: `https://example.invalid/advisories/${name}`, range: '*' });
+
+test('lower npm aggregates retain the severity of every reachable advisory', () => {
+  const r = graphReport({
+    jest: graphNode('jest', 'low', ['jest-runtime'], []),
+    'jest-runtime': graphNode('jest-runtime', 'moderate', ['leaf'], ['jest']),
+    leaf: graphNode('leaf', 'moderate', [graphAdvisory('leaf', 'moderate')], ['jest-runtime']),
+  });
+  const result = classifyAudit(JSON.stringify(r), 1, []);
+  assert.deepEqual(result.blocked, []);
+  assert.deepEqual(result.residual.map(item => item.severity), ['moderate', 'moderate', 'moderate']);
+  assert.equal(result.residual[0].reportedSeverity, 'low');
+  assert.deepEqual(classifyAudit(JSON.stringify(r), 1, [], 'moderate').blocked, Object.keys(r.vulnerabilities));
+});
+
+test('an advisory-backed cycle has complete sources regardless of report order', () => {
+  const vulnerabilities = {
+    eslint: graphNode('eslint', 'moderate', ['@eslint-community/eslint-utils', 'leaf'], ['@eslint-community/eslint-utils']),
+    '@eslint-community/eslint-utils': graphNode('@eslint-community/eslint-utils', 'low', ['eslint'], ['eslint']),
+    leaf: graphNode('leaf', 'moderate', [graphAdvisory('leaf', 'moderate')], ['eslint']),
+  };
+  for (const entries of [Object.entries(vulnerabilities), Object.entries(vulnerabilities).reverse()]) {
+    const result = classifyAudit(JSON.stringify(graphReport(Object.fromEntries(entries))), 1, []);
+    assert.deepEqual(result.blocked, []);
+    assert.equal(result.residual.length, 3);
+    for (const item of result.residual) {
+      assert.equal(item.severity, 'moderate');
+      assert.deepEqual(item.sources, [{ url: 'https://example.invalid/advisories/leaf', package: 'leaf', severity: 'moderate', range: '*' }]);
+    }
+  }
+});
+
+test('an unexplained cyclic component is rejected even beside an explained parent', () => {
+  const r = graphReport({
+    parent: graphNode('parent', 'moderate', [graphAdvisory('parent', 'moderate'), 'cycle-a'], []),
+    'cycle-a': graphNode('cycle-a', 'low', ['cycle-b'], ['parent', 'cycle-b']),
+    'cycle-b': graphNode('cycle-b', 'low', ['cycle-a'], ['cycle-a']),
+  });
+  assert.throws(() => classifyAudit(JSON.stringify(r), 1, []), /No reachable advisory evidence/);
+});
+
+test('cycles preserve exact backport coverage and cannot waive an uncovered copy', () => {
+  const r = report();
+  r.vulnerabilities.braces.via.push('consumer');
+  r.vulnerabilities.consumer.effects.push('braces');
+  assert.deepEqual(classifyAudit(JSON.stringify(r), 1, verified).locallyRemediated, ['braces', 'consumer']);
+  r.vulnerabilities.braces.nodes.push('node_modules/other/node_modules/braces');
+  assert.deepEqual(classifyAudit(JSON.stringify(r), 1, verified).blocked, ['braces', 'consumer']);
+});
+
+test('understated aggregates cannot hide high or critical residual advisories', () => {
+  const r = report();
+  for (const item of Object.values(r.vulnerabilities)) item.severity = 'low';
+  const high = classifyAudit(JSON.stringify(graphReport(r.vulnerabilities)), 1, []);
+  assert.deepEqual(high.blocked, ['braces', 'consumer']);
+  assert(high.residual.every(item => item.severity === 'high' && item.reportedSeverity === 'low'));
+  r.vulnerabilities.braces.via.push(graphAdvisory('braces', 'critical'));
+  const critical = classifyAudit(JSON.stringify(graphReport(r.vulnerabilities)), 1, verified);
+  assert.deepEqual(critical.blocked, ['braces', 'consumer']);
+  assert(critical.residual.every(item => item.severity === 'critical'));
 });
 
 test('containment follows POSIX and Windows separators, drive and UNC rules', () => {
